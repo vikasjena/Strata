@@ -12,7 +12,7 @@ import com.opengamma.strata.collect.array.IntArray;
 /**
  * The IMM date logic for credit default swaps.
  */
-final class CdsImmDateLogic {
+public final class CdsImmDateLogic {
 
   private static final int IMM_DAY = 20;
   private static final IntArray IMM_MONTHS = IntArray.of(3, 6, 9, 12);
@@ -26,7 +26,7 @@ final class CdsImmDateLogic {
    * @param date  the date
    * @return true is date is a roll date, false otherwise
    */
-  static boolean isSemiAnnualRollDate(LocalDate date) {
+  public static boolean isSemiAnnualRollDate(LocalDate date) {
     if (date.getDayOfMonth() != IMM_DAY) {
       return false;
     }
@@ -44,7 +44,7 @@ final class CdsImmDateLogic {
    * @param date  a given date
    * @return the previous IMM date
    */
-  static LocalDate getPreviousImmDate(LocalDate date) {
+  public static LocalDate getPreviousImmDate(LocalDate date) {
 
     int day = date.getDayOfMonth();
     int month = date.getMonthValue();
@@ -79,7 +79,7 @@ final class CdsImmDateLogic {
    * @param date  a given date
    * @return the next Index roll date
    */
-  static LocalDate getNextSemiAnnualRollDate(LocalDate date) {
+  public static LocalDate getNextSemiAnnualRollDate(LocalDate date) {
 
     int day = date.getDayOfMonth();
     int month = date.getMonthValue();
