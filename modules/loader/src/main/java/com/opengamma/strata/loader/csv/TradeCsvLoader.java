@@ -29,6 +29,9 @@ import com.opengamma.strata.collect.result.FailureItem;
 import com.opengamma.strata.collect.result.FailureReason;
 import com.opengamma.strata.collect.result.ValueWithFailures;
 import com.opengamma.strata.loader.LoaderUtils;
+import com.opengamma.strata.product.GenericSecurityTrade;
+import com.opengamma.strata.product.ResolvableSecurityTrade;
+import com.opengamma.strata.product.SecurityQuantityTrade;
 import com.opengamma.strata.product.SecurityTrade;
 import com.opengamma.strata.product.Trade;
 import com.opengamma.strata.product.TradeInfo;
@@ -37,6 +40,7 @@ import com.opengamma.strata.product.deposit.TermDepositTrade;
 import com.opengamma.strata.product.deposit.type.TermDepositConventions;
 import com.opengamma.strata.product.fra.FraTrade;
 import com.opengamma.strata.product.fra.type.FraConventions;
+import com.opengamma.strata.product.fx.FxSingleTrade;
 import com.opengamma.strata.product.swap.SwapTrade;
 import com.opengamma.strata.product.swap.type.SingleCurrencySwapConvention;
 
@@ -187,6 +191,7 @@ public final class TradeCsvLoader {
   static final String TRADE_DATE_FIELD = "Trade Date";
   static final String CONVENTION_FIELD = "Convention";
   static final String BUY_SELL_FIELD = "Buy Sell";
+  static final String DIRECTION_FIELD = "Direction";
   static final String CURRENCY_FIELD = "Currency";
   static final String NOTIONAL_FIELD = "Notional";
   static final String INDEX_FIELD = "Index";
@@ -199,6 +204,7 @@ public final class TradeCsvLoader {
   static final String DATE_ADJ_CNV_FIELD = "Date Convention";
   static final String DATE_ADJ_CAL_FIELD = "Date Calendar";
   static final String DAY_COUNT_FIELD = "Day Count";
+  static final String FX_RATE_FIELD = "FX Rate";
 
   // CSV column headers
   private static final String TYPE_FIELD = "Strata Trade Type";
@@ -408,8 +414,12 @@ public final class TradeCsvLoader {
             }
             break;
           case "SECURITY":
-            if (tradeType == SecurityTrade.class || tradeType == Trade.class) {
-              trades.add(tradeType.cast(SecurityCsvLoader.parseTrade(row, info, resolver)));
+            if (tradeType == SecurityTrade.class || tradeType == GenericSecurityTrade.class ||
+                tradeType == ResolvableSecurityTrade.class || tradeType == Trade.class) {
+              SecurityQuantityTrade parsed = SecurityCsvLoader.parseTrade(row, info, resolver);
+              if (tradeType.isInstance(parsed)) {
+                trades.add(tradeType.cast(parsed));
+              }
             }
             break;
           case "SWAP":
@@ -436,7 +446,9 @@ public final class TradeCsvLoader {
           case "FX":
           case "FXSINGLE":
           case "FX SINGLE":
-            trades.add(tradeType.cast(FxSingleTradeCsvLoader.parse(row, info, resolver)));
+            if (tradeType == FxSingleTrade.class || tradeType == Trade.class) {
+              trades.add(tradeType.cast(FxSingleTradeCsvLoader.parse(row, info, resolver)));
+            }
             break;
           default:
             failures.add(FailureItem.of(

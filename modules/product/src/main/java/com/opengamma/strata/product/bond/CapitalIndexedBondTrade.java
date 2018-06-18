@@ -46,7 +46,8 @@ import com.opengamma.strata.product.rate.RateComputation;
  */
 @BeanDefinition(constructorScope = "package")
 public final class CapitalIndexedBondTrade
-    implements SecuritizedProductTrade, ResolvableTrade<ResolvedCapitalIndexedBondTrade>, ImmutableBean, Serializable {
+    implements
+    SecuritizedProductTrade<CapitalIndexedBond>, ResolvableTrade<ResolvedCapitalIndexedBondTrade>, ImmutableBean, Serializable {
 
   /**
    * The additional trade information, defaulted to an empty instance.
@@ -114,16 +115,15 @@ public final class CapitalIndexedBondTrade
   @Override
   public ResolvedCapitalIndexedBondTrade resolve(ReferenceData refData) {
     ResolvedCapitalIndexedBond resolvedProduct = product.resolve(refData);
-    TradeInfo completedInfo = calculateSettlementDate(refData);
-    LocalDate settlementDate = completedInfo.getSettlementDate().get();
+    LocalDate settlementDate = calculateSettlementDate(refData);
 
     double accruedInterest = resolvedProduct.accruedInterest(settlementDate) / product.getNotional();
     if (settlementDate.isBefore(resolvedProduct.getStartDate())) {
       throw new IllegalArgumentException("Settlement date must not be before bond starts");
     }
-    BondPaymentPeriod settlement;
+    BondPaymentPeriod settlePeriod;
     if (product.getYieldConvention().equals(CapitalIndexedBondYieldConvention.GB_IL_FLOAT)) {
-      settlement = KnownAmountBondPaymentPeriod.of(
+      settlePeriod = KnownAmountBondPaymentPeriod.of(
           Payment.of(product.getCurrency(),
               -product.getNotional() * quantity * (price + accruedInterest), settlementDate),
           SchedulePeriod.of(
@@ -133,7 +133,7 @@ public final class CapitalIndexedBondTrade
               settlementDate));
     } else {
       RateComputation rateComputation = product.getRateCalculation().createRateComputation(settlementDate);
-      settlement = CapitalIndexedBondPaymentPeriod.builder()
+      settlePeriod = CapitalIndexedBondPaymentPeriod.builder()
           .startDate(resolvedProduct.getStartDate())
           .unadjustedStartDate(product.getAccrualSchedule().getStartDate())
           .endDate(settlementDate)
@@ -145,23 +145,21 @@ public final class CapitalIndexedBondTrade
     }
 
     return ResolvedCapitalIndexedBondTrade.builder()
-        .info(completedInfo)
+        .info(info)
         .product(resolvedProduct)
         .quantity(quantity)
-        .price(price)
-        .settlement(settlement)
+        .settlement(ResolvedCapitalIndexedBondSettlement.of(settlementDate, price, settlePeriod))
         .build();
   }
 
   // calculates the settlement date from the trade date if necessary
-  private TradeInfo calculateSettlementDate(ReferenceData refData) {
+  private LocalDate calculateSettlementDate(ReferenceData refData) {
     if (info.getSettlementDate().isPresent()) {
-      return info;
+      return info.getSettlementDate().get();
     }
     if (info.getTradeDate().isPresent()) {
       LocalDate tradeDate = info.getTradeDate().get();
-      LocalDate settlementDate = product.getSettlementDateOffset().adjust(tradeDate, refData);
-      return info.toBuilder().settlementDate(settlementDate).build();
+      return product.getSettlementDateOffset().adjust(tradeDate, refData);
     }
     throw new IllegalStateException("CapitalIndexedBondTrade.resolve() requires either trade date or settlement date");
   }

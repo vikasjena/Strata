@@ -7,6 +7,7 @@ package com.opengamma.strata.product;
 
 import com.opengamma.strata.basics.ReferenceData;
 import com.opengamma.strata.basics.ReferenceDataNotFoundException;
+import com.opengamma.strata.basics.ResolvableCalculationTarget;
 import com.opengamma.strata.collect.Messages;
 
 /**
@@ -17,7 +18,7 @@ import com.opengamma.strata.collect.Messages;
  * security information.
  */
 public interface ResolvableSecurityTrade
-    extends SecurityQuantityTrade {
+    extends SecurityQuantityTrade, ResolvableCalculationTarget {
 
   /**
    * Resolves the security identifier using the specified reference data.
@@ -35,12 +36,13 @@ public interface ResolvableSecurityTrade
    * @throws ReferenceDataNotFoundException if an identifier cannot be resolved in the reference data
    * @throws RuntimeException if unable to resolve due to an invalid definition
    */
-  public default SecuritizedProductTrade resolveSecurity(ReferenceData refData) {
+  @Override
+  public default SecuritizedProductTrade<?> resolveTarget(ReferenceData refData) {
     SecurityId securityId = getSecurityId();
     Security security = refData.getValue(securityId);
     SecurityQuantityTrade trade = security.createTrade(getInfo(), getQuantity(), getPrice(), refData);
     if (trade instanceof SecuritizedProductTrade) {
-      return (SecuritizedProductTrade) trade;
+      return (SecuritizedProductTrade<?>) trade;
     }
     throw new ClassCastException(Messages.format(
         "Reference data for security '{}' did not implement SecuritizedProductTrade: ", securityId, trade.getClass().getName()));
