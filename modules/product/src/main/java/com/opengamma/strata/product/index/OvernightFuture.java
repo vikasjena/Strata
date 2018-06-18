@@ -18,6 +18,7 @@ import org.joda.beans.MetaProperty;
 import org.joda.beans.gen.BeanDefinition;
 import org.joda.beans.gen.ImmutableDefaults;
 import org.joda.beans.gen.ImmutablePreBuild;
+import org.joda.beans.gen.ImmutableValidator;
 import org.joda.beans.gen.PropertyDefinition;
 import org.joda.beans.impl.direct.DirectFieldsBeanBuilder;
 import org.joda.beans.impl.direct.DirectMetaBean;
@@ -91,7 +92,7 @@ public final class OvernightFuture
    * The last date of trading.
    * <p>
    * This must be a valid business day on the fixing calendar of {@code index}.
-   * The last trade date is typically the last business day of the month.
+   * For example, the last trade date is the last business day of the month.
    */
   @PropertyDefinition(validate = "notNull")
   private final LocalDate lastTradeDate;
@@ -138,6 +139,12 @@ public final class OvernightFuture
   private final Rounding rounding;
 
   //-------------------------------------------------------------------------
+  @ImmutableValidator
+  private void validate() {
+    ArgChecker.inOrderNotEqual(startDate, endDate, "startDate", "endDate");
+  }
+
+  //-------------------------------------------------------------------------
   @ImmutableDefaults
   private static void applyDefaults(Builder builder) {
     builder.rounding(Rounding.none());
@@ -158,6 +165,7 @@ public final class OvernightFuture
     OvernightRateComputation overnightAveragedRate = OvernightRateComputation.of(
         index, startDate, endDate, 0, accrualMethod, refData);
     return ResolvedOvernightFuture.builder()
+        .securityId(securityId)
         .accrualFactor(accrualFactor)
         .currency(currency)
         .notional(notional)
@@ -237,6 +245,7 @@ public final class OvernightFuture
     this.index = index;
     this.accrualMethod = accrualMethod;
     this.rounding = rounding;
+    validate();
   }
 
   @Override
@@ -296,7 +305,7 @@ public final class OvernightFuture
    * Gets the last date of trading.
    * <p>
    * This must be a valid business day on the fixing calendar of {@code index}.
-   * The last trade date is typically the last business day of the month.
+   * For example, the last trade date is the last business day of the month.
    * @return the value of the property, not null
    */
   public LocalDate getLastTradeDate() {
@@ -861,7 +870,7 @@ public final class OvernightFuture
      * Sets the last date of trading.
      * <p>
      * This must be a valid business day on the fixing calendar of {@code index}.
-     * The last trade date is typically the last business day of the month.
+     * For example, the last trade date is the last business day of the month.
      * @param lastTradeDate  the new value, not null
      * @return this, for chaining, not null
      */
