@@ -50,7 +50,8 @@ import com.opengamma.strata.product.common.SummarizerUtils;
  */
 @BeanDefinition(constructorScope = "package")
 public final class OvernightFutureTrade
-    implements SecuritizedProductTrade, ResolvableTrade<ResolvedOvernightFutureTrade>, ImmutableBean, Serializable {
+    implements SecuritizedProductTrade<OvernightFuture>, ResolvableTrade<ResolvedOvernightFutureTrade>, ImmutableBean,
+    Serializable {
 
   /**
   * The additional trade information, defaulted to an empty instance.
