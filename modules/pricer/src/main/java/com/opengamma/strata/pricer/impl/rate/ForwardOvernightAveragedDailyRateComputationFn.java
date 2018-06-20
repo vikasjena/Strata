@@ -17,6 +17,12 @@ import com.opengamma.strata.pricer.rate.RateComputationFn;
 import com.opengamma.strata.pricer.rate.RatesProvider;
 import com.opengamma.strata.product.rate.OvernightAveragedDailyRateComputation;
 
+/**
+* Rate computation implementation for an averaged daily rate for a single Overnight index.
+* <p>
+* The rate computation retrieves the rate at each fixing date in the period 
+* from the {@link RatesProvider} and average them.
+*/
 public class ForwardOvernightAveragedDailyRateComputationFn
     implements RateComputationFn<OvernightAveragedDailyRateComputation> {
 

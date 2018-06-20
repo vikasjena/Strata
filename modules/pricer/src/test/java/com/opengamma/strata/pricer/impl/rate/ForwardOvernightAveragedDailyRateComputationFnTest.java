@@ -75,7 +75,7 @@ public class ForwardOvernightAveragedDailyRateComputationFnTest {
     TIME_SERIES = builder.build();
   }
   private static final DoubleArray TIME = DoubleArray.of(0.02, 0.08, 0.25);
-  private static final DoubleArray RATE = DoubleArray.of(0.01, 0.015, 0.08);
+  private static final DoubleArray RATE = DoubleArray.of(0.01, 0.015, 0.008);
   private static final Curve CURVE = InterpolatedNodalCurve.of(
       Curves.zeroRates("FED-FUND", DayCounts.ACT_365F), TIME, RATE, CurveInterpolators.LINEAR);
 
