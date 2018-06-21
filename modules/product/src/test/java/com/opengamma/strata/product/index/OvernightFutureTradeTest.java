@@ -41,7 +41,7 @@ import com.opengamma.strata.product.swap.OvernightAccrualMethod;
 public class OvernightFutureTradeTest {
 
   private static final ReferenceData REF_DATA = ReferenceData.standard();
-  private static final LocalDate TRADE_DATE = date(2015, 3, 18);
+  private static final LocalDate TRADE_DATE = date(2018, 3, 18);
   private static final TradeInfo TRADE_INFO = TradeInfo.of(TRADE_DATE);
   private static final double NOTIONAL = 5_000_000d;
   private static final double NOTIONAL2 = 10_000_000d;
