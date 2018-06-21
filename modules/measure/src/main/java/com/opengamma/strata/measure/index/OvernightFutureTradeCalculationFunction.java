@@ -13,12 +13,14 @@ import java.util.Set;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.opengamma.strata.basics.ReferenceData;
+import com.opengamma.strata.basics.Resolvable;
 import com.opengamma.strata.basics.currency.Currency;
 import com.opengamma.strata.basics.index.OvernightIndex;
 import com.opengamma.strata.calc.Measure;
 import com.opengamma.strata.calc.runner.CalculationFunction;
 import com.opengamma.strata.calc.runner.CalculationParameters;
 import com.opengamma.strata.calc.runner.FunctionRequirements;
+import com.opengamma.strata.collect.ArgChecker;
 import com.opengamma.strata.collect.result.FailureReason;
 import com.opengamma.strata.collect.result.Result;
 import com.opengamma.strata.data.FieldName;
@@ -28,7 +30,9 @@ import com.opengamma.strata.market.observable.QuoteId;
 import com.opengamma.strata.measure.Measures;
 import com.opengamma.strata.measure.rate.RatesMarketDataLookup;
 import com.opengamma.strata.measure.rate.RatesScenarioMarketData;
+import com.opengamma.strata.product.SecuritizedProductPortfolioItem;
 import com.opengamma.strata.product.index.OvernightFuture;
+import com.opengamma.strata.product.index.OvernightFuturePosition;
 import com.opengamma.strata.product.index.OvernightFutureTrade;
 import com.opengamma.strata.product.index.ResolvedOvernightFutureTrade;
 
@@ -56,9 +60,22 @@ import com.opengamma.strata.product.index.ResolvedOvernightFutureTrade;
  * Strata uses <i>decimal prices</i> for Overnight rate futures in the trade model, pricers and market data.
  * The decimal price is based on the decimal rate equivalent to the percentage.
  * For example, a price of 99.32 implies an interest rate of 0.68% which is represented in Strata by 0.9932.
+ * 
+ * @param <T> the trade or position type
  */
-public class OvernightFutureTradeCalculationFunction
-    implements CalculationFunction<OvernightFutureTrade> {
+public class OvernightFutureTradeCalculationFunction<T extends SecuritizedProductPortfolioItem<OvernightFuture> & Resolvable<ResolvedOvernightFutureTrade>>
+    implements CalculationFunction<T> {
+
+  /**
+   * The trade instance
+   */
+  public static final OvernightFutureTradeCalculationFunction<OvernightFutureTrade> TRADE =
+      new OvernightFutureTradeCalculationFunction<>(OvernightFutureTrade.class);
+  /**
+   * The position instance
+   */
+  public static final OvernightFutureTradeCalculationFunction<OvernightFuturePosition> POSITION =
+      new OvernightFutureTradeCalculationFunction<>(OvernightFuturePosition.class);
 
   /**
    * The calculations by measure.
@@ -79,15 +96,23 @@ public class OvernightFutureTradeCalculationFunction
   private static final ImmutableSet<Measure> MEASURES = CALCULATORS.keySet();
 
   /**
-   * Creates an instance.
+   * The trade or position type.
    */
-  public OvernightFutureTradeCalculationFunction() {
+  private final Class<T> targetType;
+
+  /**
+   * Creates an instance.
+   * 
+   * @param targetType  the trade or position type
+   */
+  public OvernightFutureTradeCalculationFunction(Class<T> targetType) {
+    this.targetType = ArgChecker.notNull(targetType, "targetType");
   }
 
   //-------------------------------------------------------------------------
   @Override
-  public Class<OvernightFutureTrade> targetType() {
-    return OvernightFutureTrade.class;
+  public Class<T> targetType() {
+    return targetType;
   }
 
   @Override
@@ -96,32 +121,31 @@ public class OvernightFutureTradeCalculationFunction
   }
 
   @Override
-  public Optional<String> identifier(OvernightFutureTrade target) {
+  public Optional<String> identifier(T target) {
     return target.getInfo().getId().map(id -> id.toString());
   }
 
   @Override
-  public Currency naturalCurrency(OvernightFutureTrade trade, ReferenceData refData) {
-    return trade.getProduct().getCurrency();
+  public Currency naturalCurrency(T target, ReferenceData refData) {
+    return target.getProduct().getCurrency();
   }
 
   //-------------------------------------------------------------------------
   @Override
   public FunctionRequirements requirements(
-      OvernightFutureTrade trade,
+      T target,
       Set<Measure> measures,
       CalculationParameters parameters,
       ReferenceData refData) {
 
     // extract data from product
-    OvernightFuture product = trade.getProduct();
-    QuoteId quoteId = QuoteId.of(trade.getProduct().getSecurityId().getStandardId(), FieldName.SETTLEMENT_PRICE);
-    Currency currency = product.getCurrency();
+    OvernightFuture product = target.getProduct();
+    QuoteId quoteId = QuoteId.of(target.getProduct().getSecurityId().getStandardId(), FieldName.SETTLEMENT_PRICE);
     OvernightIndex index = product.getIndex();
 
     // use lookup to build requirements
     RatesMarketDataLookup ratesLookup = parameters.getParameter(RatesMarketDataLookup.class);
-    FunctionRequirements ratesReqs = ratesLookup.requirements(currency, index);
+    FunctionRequirements ratesReqs = ratesLookup.requirements(ImmutableSet.of(), ImmutableSet.of(index));
     ImmutableSet<MarketDataId<?>> valueReqs = ImmutableSet.<MarketDataId<?>>builder()
         .add(quoteId)
         .addAll(ratesReqs.getValueRequirements())
@@ -132,14 +156,14 @@ public class OvernightFutureTradeCalculationFunction
   //-------------------------------------------------------------------------
   @Override
   public Map<Measure, Result<?>> calculate(
-      OvernightFutureTrade trade,
+      T target,
       Set<Measure> measures,
       CalculationParameters parameters,
       ScenarioMarketData scenarioMarketData,
       ReferenceData refData) {
 
     // resolve the trade once for all measures and all scenarios
-    ResolvedOvernightFutureTrade resolved = trade.resolve(refData);
+    ResolvedOvernightFutureTrade resolved = target.resolve(refData);
 
     // use lookup to query market data
     RatesMarketDataLookup ratesLookup = parameters.getParameter(RatesMarketDataLookup.class);
@@ -156,21 +180,21 @@ public class OvernightFutureTradeCalculationFunction
   // calculate one measure
   private Result<?> calculate(
       Measure measure,
-      ResolvedOvernightFutureTrade trade,
+      ResolvedOvernightFutureTrade resolved,
       RatesScenarioMarketData marketData) {
 
     SingleMeasureCalculation calculator = CALCULATORS.get(measure);
     if (calculator == null) {
       return Result.failure(FailureReason.UNSUPPORTED, "Unsupported measure for OvernightFutureTrade: {}", measure);
     }
-    return Result.of(() -> calculator.calculate(trade, marketData));
+    return Result.of(() -> calculator.calculate(resolved, marketData));
   }
 
   //-------------------------------------------------------------------------
   @FunctionalInterface
   interface SingleMeasureCalculation {
     public abstract Object calculate(
-        ResolvedOvernightFutureTrade trade,
+        ResolvedOvernightFutureTrade resolved,
         RatesScenarioMarketData marketData);
   }
 

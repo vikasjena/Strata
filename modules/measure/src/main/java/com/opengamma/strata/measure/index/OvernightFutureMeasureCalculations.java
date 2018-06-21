@@ -30,8 +30,6 @@ import com.opengamma.strata.product.index.ResolvedOvernightFutureTrade;
  */
 public class OvernightFutureMeasureCalculations {
 
-  // TODO javadoc
-
   /**
    * Default implementation.
    */
