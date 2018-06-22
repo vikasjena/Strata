@@ -91,7 +91,7 @@ public class DiscountingOvernightFutureProductPricer {
   public double price(ResolvedOvernightFuture future, RatesProvider ratesProvider) {
     double forwardRate = rateComputationFn.rate(
         future.getOvernightRate(),
-        future.getOvernightRate().getStartDate(), // TODO start, end not used
+        future.getOvernightRate().getStartDate(),
         future.getOvernightRate().getEndDate(),
         ratesProvider);
     return 1d - forwardRate;
@@ -110,7 +110,7 @@ public class DiscountingOvernightFutureProductPricer {
 
     PointSensitivityBuilder forwardRateSensitivity = rateComputationFn.rateSensitivity(
         future.getOvernightRate(),
-        future.getOvernightRate().getStartDate(), // TODO start, end not used
+        future.getOvernightRate().getStartDate(),
         future.getOvernightRate().getEndDate(),
         ratesProvider);
     // The sensitivity should be to no currency or currency XXX. To avoid useless conversion, the dimension-less 
